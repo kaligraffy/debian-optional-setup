@@ -14,15 +14,16 @@ declare -x _COLOR_INFO='\033[1;32m'; #light blue
 declare -x _COLOR_DEBUG='\033[0;37m'; #grey
 declare -x _COLOR_NORMAL='\033[0m'; # No Color
 declare -x _APT_CMD="apt-get -qq -y";
-
+declare -x _KERNEL_VERSION_FILTER='v8l'
+declare -x _LOG_FILE="${_BASE_DIR}/setup.log"
 
 #OPTIONAL CONFIG
 declare -x _NEW_DEFAULT_USER='kali'; #default is kali
 declare -x _SSH_KEY_PASSPHRASE='CHANGEME'; #the ssh passphrase for your ssh key
 declare -x _WIFI_PASSWORD='CHANGEME'; #the password for the wifi
 
-declare -x _DNS1='1.1.1.1'; #primary dns
-declare -x _DNS2='9.9.9.9'; #fallback dns
+declare -x _DNS1='9.9.9.9'; #primary dns
+declare -x _DNS2='1.1.1.1'; #fallback dns
 
 declare -x _CPU_GOVERNOR='performance'; #cpu frequency setting can be 'performance' or if running on battery 'ondemand'. 
 declare -x _IODINE_DOMAIN=; #iodine domain
@@ -48,6 +49,7 @@ declare -x _SFTP_PASSWORD="CHANGEME"; #ftp user
 print_usage(){
     local usage
     usage=$(cat << 'HERE' 
+
     Usage: sudo ./optional_setup
 
     ARG1 can be:
@@ -70,38 +72,38 @@ optional_setup(){
 # user_setup; change name of default user
 # initramfs_wifi_setup; #enables connection to a wifi router/hotspot on boot
 # wifi_setup; #sets up the wifi to connect to a hotspot/router on decrypt
-chkboot_setup; #hashes your boot drive on startup and lets you know if it changes
+#chkboot_setup; #hashes your boot drive on startup and lets you know if it changes
 # display_manager_setup; #disables the gui
 # dropbear_setup; #sets up initramfs dropbear
-# luks_nuke_setup; #sets up luks nuke kali only
+#luks_nuke_setup; #sets up luks nuke kali only
 # ssh_setup; #sets up ssh
-# cpu_governor_setup; #sets up the cpu 'governor'
-# hostname_setup; #sets up the hostname
+#cpu_governor_setup; #sets up the cpu 'governor'
+#hostname_setup; #sets up the hostname
 # root_password_setup; #sets root password
 # user_password_setup; #sets kali user password
 # vpn_client_setup; #sets up vpn client openvpn
-# clamav_setup; #sets up antivirus scanning
-# fake_hwclock_setup; #sets up fake hardware clock
+#clamav_setup; #sets up antivirus scanning
+fake_hwclock_setup; #sets up fake hardware clock
 # apt_upgrade; #apt upgrade
 # docker_setup; #docker
-# ntpsec_setup; #sets up secure ntp 
+ntpsec_setup; #sets up secure ntp 
 # iodine_setup; #sets up iodine
-# vlc_setup; #sets up vlc and fixes audio stutter issue on rpi4
-# sysctl_hardening_setup; #hardens your sysctl
+vlc_setup; #sets up vlc and fixes audio stutter issue on rpi4
+sysctl_hardening_setup; #hardens your sysctl
 # passwordless_login_setup; #enables passwordless login of the gui if using a gui
 # bluetooth_setup; #sets up bluetooth (modify if you have some bluetooth devices you want to to work)
 # apparmor_setup; #apparmor 
 # random_mac_on_reboot_setup; #randomizes mac address on machine reboot
-# firejail_setup; #sets up firejail
+firejail_setup; #sets up firejail
 # vnc_setup; #sets up vnc
 # sftp_setup; #sets up secure ftp
 # avahi_setup; #mdns lets you find your device with $hostname.local instead of ip (not currently supported in android)
 # packages_setup; #installs, removes packages
-# miscellaneous_setup; #other stuff - add yours in
-# secure_dns_setup; #sets up dns, dnssec, dnsovertls
+miscellaneous_setup; #other stuff - add yours in
+secure_dns_setup; #sets up dns, dnssec, dnsovertls
 # simple_dns_setup; # sets up resolv.conf only
-# aide_setup; #configures aide intrusion detection
-# snapper_setup; #installs snapper (config left to use)
+aide_setup; #configures aide intrusion detection
+snapper_setup; #installs snapper (config left to use)
 }
 
 #other stuff - add your own!
@@ -123,27 +125,32 @@ main(){
     echo_info "$(basename "$0") started"
     check_run_as_root;
     set_defaults
-    
+
     case $1 in
         run|-r)
         #mount, run optional setup and generate initramfs
         optional_setup;
-        local modules_dir="${_CHROOT_DIR}/lib/modules/";
-        local kernel_version;
-        mount -o remount,rw /boot 
-        
-        kernel_version=$(find "${modules_dir}" -maxdepth 1 -regex ".*${_KERNEL_VERSION_FILTER}.*" | tail -n 1 | xargs basename);
-        echo_info "kernel is '${kernel_version}'";
-        echo_info "running update-initramfs, mkinitramfs"
-        update-initramfs -u -k all
-        mkinitramfs -o /boot/initramfs.gz -v ${kernel_version}
+	rebuild_kernel
         ;;
-        *)
-        print_usage;
-        ;;
+	*)
+        print_usage
+	;;
     esac
 
     exit 0;
+}
+
+rebuild_kernel(){
+  if (( REBUILD_KERNEL == 1 )); then
+  local modules_dir="${_CHROOT_DIR}/lib/modules/";
+  local kernel_version;    
+  mount -o remount,rw /boot 
+  kernel_version=$(find "${modules_dir}" -maxdepth 1 -regex ".*${_KERNEL_VERSION_FILTER}.*" | tail -n 1 | xargs basename);
+  echo_info "kernel is '${kernel_version}'";
+  echo_info "running update-initramfs, mkinitramfs"
+  update-initramfs -u -k all
+  mkinitramfs -o /boot/initramfs.gz -v ${kernel_version}
+  fi
 }
 
 #used by wifi_setup and initramfs_wifi_setup
@@ -527,18 +534,13 @@ firejail_setup(){
     echo_function_start;
     ${_APT_CMD} install firejail firejail-profiles firetools
     firecfg
-    #TODO this doesn't play nice with new user - it looks for the old default user kali:  'firecfg'
     #TODO firejail configuration for hardened malloc, apparmor integration
-    echo_warn "Remember to run firecfg"
 }
 
 #randomize mac on reboot
 random_mac_on_reboot_setup(){
-#https://wiki.archlinux.org/index.php/MAC_address_spoofing#Automatically
-echo_function_start;
-    ${_APT_CMD} install macchanger 
-    cp -p "${_FILE_DIR}/random-mac-scripts/macspoof" "/etc/systemd/system/macspoof@${_WIFI_INTERFACE}.service";
-    "systemctl enable macspoof@${_WIFI_INTERFACE}"
+    echo_function_start;
+    cp -p "${_FILE_DIR}/random-mac-scripts/mac-spoof.conf" "/etc/NetworkManager/conf.d/mac-spoof.conf";
 }
 
 #configures two ipv4 ip addresses as your global dns
@@ -548,8 +550,14 @@ echo_function_start;
 #requires: , optional: 
 secure_dns_setup(){
     echo_function_start;
-    systemctl disable resolvconf                                                                                                        
+
+    if systemctl list-units --full -all | grep -F 'resolvconf.service' ; then
+       systemctl disable resolvconf
+    fi
+
     systemctl enable systemd-resolved
+    systemctl start systemd-resolved.service
+
     sed -i "s|^#DNS=|DNS=${_DNS1}|" "/etc/systemd/resolved.conf";
     sed -i "s|^#FallbackDNS=|FallbackDNS=${_DNS2}|" "/etc/systemd/resolved.conf";
     sed -i "s|^#DNSSEC=no|DNSSEC=true|" "/etc/systemd/resolved.conf";
@@ -721,19 +729,8 @@ function_exists() {
 set_defaults(){
 echo_function_start;
 set +eu
-set_default "_NO_PROMPTS" "0"  
-set_default "_LOG_LEVEL" "1"
-set_default "_LUKS_PASSWORD" "CHANGEME"
-set_default "_FILESYSTEM_TYPE" "ext4"
-set_default "_LUKS_CONFIGURATION" "--type luks2 --cipher aes-xts-plain64 --key-size 512 --use-random --hash sha512 --pbkdf argon2i --iter-time 5000"
-set_default "_LOCALE" "en_US.UTF-8"
-set_default "_IMAGE_MODE" "1"
-set_default "_IMAGE_SHA256" ""
-set_default "_IMAGE_URL" "MANDATORY"
+
 set_default "_KERNEL_VERSION_FILTER" "MANDATORY"
-
-
-set_default "_OUTPUT_BLOCK_DEVICE" "MANDATORY"
 
 if function_exists "user_setup" || function_exists "user_password_setup"; then
     set_default "_NEW_DEFAULT_USER" "MANDATORY"
@@ -889,7 +886,7 @@ local var_name="$1"
 local default_value="$2"
 local current_value;
 current_value="$(eval echo "\$${var_name}")"
-if [[ "$( check_variable_is_set "$current_value")" == "0" ]]; then
+if [[ -n "$current_value" ]]; then
     echo_info "${var_name} was set to '${current_value}'";
 else
     if [[ $default_value == 'MANDATORY' ]]; then
