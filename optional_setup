@@ -45,6 +45,7 @@ declare -x _INITRAMFS_WIFI_DRIVERS='brcmfmac brcmutil cfg80211 rfkill'; #any cus
 declare -x _INITRAMFS_WIFI_INTERFACE='wlan0'
 declare -x _CHKBOOT_BOOTDISK="/dev/mmcblk0"; #usually /dev/mmcblk0 for sd card installs or /dev/sda
 declare -x _SFTP_PASSWORD="CHANGEME"; #ftp user
+declare -x _NTP_SERVER="time.cloudflare.com"
 
 print_usage(){
     local usage
@@ -452,19 +453,12 @@ snapper_setup(){
 
 #secure network time protocol configuration, also installs ntpdate client for manually pulling the time
 #requires: , optional: 
-ntpsec_setup(){
+chrony_setup(){
     echo_function_start;
-    ${_APT_CMD} install ntpsec ntpsec-doc ntpsec-ntpdate
+    ${_APT_CMD} install chrony
     #https://blog.cloudflare.com/secure-time/
     #add some other nts servers commented in case you prefer to use them
-    sed -i "s|^# server time.cloudflare.com nts|server time.cloudflare.com:1234 iburst nts \n#server nts.sth1.ntp.se:1234 iburst nts\n#server nts.sth2.ntp.se:1234 iburst nts|" "/etc/ntpsec/ntp.conf" "/etc/ntpsec/ntp.conf"
-    sed -i "s|^pool 0.debian.pool.ntp.org iburst|#pool 0.debian.pool.ntp.org iburst|" "/etc/ntpsec/ntp.conf"
-    sed -i "s|^pool 1.debian.pool.ntp.org iburst|#pool 1.debian.pool.ntp.org iburst|" "/etc/ntpsec/ntp.conf"
-    sed -i "s|^pool 2.debian.pool.ntp.org iburst|#pool 2.debian.pool.ntp.org iburst|" "/etc/ntpsec/ntp.conf"
-    sed -i "s|^pool 3.debian.pool.ntp.org iburst|#pool 3.debian.pool.ntp.org iburst|" "/etc/ntpsec/ntp.conf"
-
-    mkdir -p /var/log/ntpsec
-    chown ntpsec:ntpsec /var/log/ntpsec
+    echo "server ${_NTP_SERVER} iburst nts" >> /etc/chrony/chrony.conf
     systemctl enable ntpsec.service
 }
 
