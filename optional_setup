@@ -560,13 +560,14 @@ secure_dns_setup(){
     sed -i "s|^#LLMNR=yes|LLMNR=no|" "/etc/systemd/resolved.conf";
 
     cat <<- EOT > "/etc/NetworkManager/conf.d/dns.conf"
-    [main]
-    dns=none
-    systemd-resolved=false
+[main]
+dns=none
+systemd-resolved=false
 
-    [connection]
-    llmnr=no
-    mdns=no
+[connection]
+llmnr=no
+mdns=no
+
 EOT
 
     #add resolved dns to top of /etc/systemd/resolved.conf for use with NetworkManager:
@@ -676,18 +677,18 @@ sysctl_hardening_setup(){
     cp -p "/etc/sysctl.conf" "/etc/sysctl.conf.bak";
     atomic_append "#dev.tty.ldisc_autoload = 0" "/etc/sysctl.conf";
     atomic_append "#fs.protected_fifos = 2" "/etc/sysctl.conf";
-    atomic_append "#fs.protected_hardlinks = 1" "/etc/sysctl.conf";
+    atomic_append "fs.protected_hardlinks = 1" "/etc/sysctl.conf";
     atomic_append "#fs.protected_regular = 2" "/etc/sysctl.conf";
-    atomic_append "#fs.protected_symlinks = 1" "/etc/sysctl.conf";
+    atomic_append "fs.protected_symlinks = 1" "/etc/sysctl.conf";
     atomic_append "#fs.suid_dumpable = 0" "/etc/sysctl.conf";
     atomic_append "#kernel.core_uses_pid = 1" "/etc/sysctl.conf";
     atomic_append "#kernel.ctrl-alt-del = 0" "/etc/sysctl.conf";
-    atomic_append "#kernel.dmesg_restrict = 1" "/etc/sysctl.conf";
+    atomic_append "kernel.dmesg_restrict = 1" "/etc/sysctl.conf";
     atomic_append "#kernel.kptr_restrict = 2" "/etc/sysctl.conf";
     atomic_append "#kernel.modules_disabled = 1" "/etc/sysctl.conf";
     atomic_append "#kernel.perf_event_paranoid = 3" "/etc/sysctl.conf";
     atomic_append "#kernel.randomize_va_space = 2" "/etc/sysctl.conf";
-    atomic_append "#kernel.sysrq = 0" "/etc/sysctl.conf";
+    atomic_append "kernel.sysrq = 0" "/etc/sysctl.conf";
     atomic_append "#kernel.unprivileged_bpf_disabled = 0" "/etc/sysctl.conf";
     atomic_append "net.ipv4.conf.all.accept_redirects = 0" "/etc/sysctl.conf";
     atomic_append "net.ipv4.conf.all.accept_source_route = 0" "/etc/sysctl.conf";
