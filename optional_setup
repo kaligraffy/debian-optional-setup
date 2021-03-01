@@ -111,7 +111,7 @@ snapper_setup; #installs snapper (config left to use)
 miscellaneous_setup(){
     echo_function_start;
     #suppress dmesgs in stdout - useful for low power messages if running headless
-    echo "@reboot root /bin/sh echo '1' > /proc/sys/kernel/printk" > "/etc/cron.d/suppress-dmesg"
+    echo "@reboot root /usr/bin/echo '1' > /proc/sys/kernel/printk" > "/etc/cron.d/suppress-dmesg"
 
     #disable splash on startup
     atomic_append "disable_splash=1" "/boot/config.txt"
