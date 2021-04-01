@@ -84,27 +84,27 @@ optional_setup(){
 # user_password_setup; #sets kali user password
 # vpn_client_setup; #sets up vpn client openvpn
 #clamav_setup; #sets up antivirus scanning
-fake_hwclock_setup; #sets up fake hardware clock
+#fake_hwclock_setup; #sets up fake hardware clock
 # apt_upgrade; #apt upgrade
 # docker_setup; #docker
-ntpsec_setup; #sets up secure ntp 
+#ntpsec_setup; #sets up secure ntp 
 # iodine_setup; #sets up iodine
-vlc_setup; #sets up vlc and fixes audio stutter issue on rpi4
+#vlc_setup; #sets up vlc and fixes audio stutter issue on rpi4
 sysctl_hardening_setup; #hardens your sysctl
 # passwordless_login_setup; #enables passwordless login of the gui if using a gui
 # bluetooth_setup; #sets up bluetooth (modify if you have some bluetooth devices you want to to work)
 # apparmor_setup; #apparmor 
-# random_mac_on_reboot_setup; #randomizes mac address on machine reboot
-firejail_setup; #sets up firejail
+random_mac_on_reboot_setup; #randomizes mac address on machine reboot
+#firejail_setup; #sets up firejail
 # vnc_setup; #sets up vnc
 # sftp_setup; #sets up secure ftp
 # avahi_setup; #mdns lets you find your device with $hostname.local instead of ip (not currently supported in android)
 # packages_setup; #installs, removes packages
-miscellaneous_setup; #other stuff - add yours in
-secure_dns_setup; #sets up dns, dnssec, dnsovertls
+#miscellaneous_setup; #other stuff - add yours in
+#secure_dns_setup; #sets up dns, dnssec, dnsovertls
 # simple_dns_setup; # sets up resolv.conf only
-aide_setup; #configures aide intrusion detection
-snapper_setup; #installs snapper (config left to use)
+#aide_setup; #configures aide intrusion detection
+#snapper_setup; #installs snapper (config left to use)
 }
 
 #other stuff - add your own!
